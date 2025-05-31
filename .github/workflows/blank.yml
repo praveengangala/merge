@@ -1,19 +1,45 @@
-name: CI
+name: CI Workflow
 
 on:
-  # Triggers the workflow on push or pull request events but only for the "master" branch
+  # Also available on push/pull request to master
   push:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
 
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
-      branch:
-        description: 'Branch to run workflow on'
+      environment:
+        description: 'Deployment environment'
         required: true
-        default: 'master'
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+      build_type:
+        description: 'Type of build to run'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - incremental
+
+      debug:
+        description: 'Enable debug logging'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+      version_tag:
+        description: 'Optional version tag (e.g., v1.2.3)'
+        required: false
 
 jobs:
   build:
@@ -23,12 +49,23 @@ jobs:
       - name: Checkout selected branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch }}
+          ref: ${{ github.ref }}  # Uses the branch selected in GitHub UI
 
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      - name: Run a multi-line script
+      - name: Show selected inputs
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          echo "Environment: ${{ github.event.inputs.environment }}"
+          echo "Build type: ${{ github.event.inputs.build_type }}"
+          echo "Debug mode: ${{ github.event.inputs.debug }}"
+          echo "Version tag: ${{ github.event.inputs.version_tag }}"
+
+      - name: Conditional logic based on inputs
+        run: |
+          if [ "${{ github.event.inputs.debug }}" == "true" ]; then
+            echo "🔍 Debug logging is enabled"
+          fi
+
+          if [ "${{ github.event.inputs.build_type }}" == "incremental" ]; then
+            echo "🧱 Running an incremental build"
+          else
+            echo "🏗️ Running a full build"
+          fi
